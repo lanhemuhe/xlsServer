@@ -1,0 +1,179 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<!-- springboot 下默认资源搜索路径：
+		/META-INF/resources/
+		/resources/
+		/static/
+		/public/
+	 -->
+	<link rel="stylesheet" th:href="@{/css/style.css}"></link>
+	<link rel="shortcut icon" th:href="@{/img/icon.ico}"></link>
+	<title>Excel文件配置</title>
+	<!-- 指定编码 -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<script type="text/javascript" th:src="@{/script/jquery-3.2.1.js}"></script>
+<script type="text/javascript" th:src="@{/script/jquery.form.js}"></script>
+<script type="text/javascript" th:src="@{/script/common.js}"></script>
+<script type="text/javascript">
+	var rootPath=getRootPath();
+	$(document).ready(function(){
+			refreshTemplateList();
+			refreshFileList();
+		}); 
+	//获取模板文件列表，初始化下拉框	
+	function refreshTemplateList(){
+		$.getJSON(rootPath+'/xlsConfig/templateList.json',function(data){ 
+			var option=' '; 
+			$.each(data,function(i,n){ 
+			  option+=' <option> '+n["templateName"]+' </option>'; 
+			}); 
+			$("select[name='fileTemplateName']").empty();
+			$("select[name='fileTemplateName']").append(option); 
+			}); 
+	}
+	//获取数据文件列表，初始化下拉框	
+	function refreshFileList(){
+		$.getJSON(rootPath+'/xlsConfig/fileList.json',function(data){ 
+			var option=' '; 
+			$.each(data,function(i,n){ 
+			  option+=' <option> '+n["fileName"]+' </option>'; 
+			}); 
+			$("select[name='fileName']").empty();
+			$("select[name='fileName']").append(option); 
+			}); 
+	}
+	// 上传文件
+	function uploadTemplate(){
+		$('#uploadTemplate').ajaxSubmit(
+					{success: function(data){
+						$("#upTempResult").attr("class","success");
+						$("#upTempResult").empty();
+						$("#upTempResult").append("上传成功");
+						refreshFileList();			// 上传成功后刷新文件名称列表 
+						refreshTemplateList();
+                    },
+                    error: function(XmlHttpRequest, textStatus, errorThrown){
+                        $("#upTempResult").attr("class","error");
+                        $("#upTempResult").empty();
+						$("#upTempResult").append("上传失败");
+                    }
+                    }
+                   );
+	}
+	// 上传文件2    用submit来提交表单，然后在js中监听submit方法，用ajax提交表单最后阻止submit的自动提交
+	function uploadTemplate2(){
+		$('#uploadTemplate').on("submit",function(ev){
+						$.ajax(
+						{url: "/xlsConfig/uploadXls",
+						type:"post",
+						data:{templateFile,dataFile,sheetName},
+						success: function(data){
+							$("#upTempResult").attr("class","success");
+							$("#upTempResult").empty();
+							$("#upTempResult").append("上传成功");
+							refreshFileList();			// 上传成功后刷新文件名称列表 
+	                    },
+	                    error: function(XmlHttpRequest, textStatus, errorThrown){
+	                        $("#upTempResult").attr("class","error");
+	                        $("#upTempResult").empty();
+							$("#upTempResult").append("上传失败");
+	                    }
+	                    })
+                    	return false;
+                    }
+                   );
+	}
+	// 获取文件对应JSON数据
+	function getJSONData(){
+			$('#getJSONData').ajaxSubmit(
+						{success: function(data){
+	                        $("#readedData").attr("class","success");
+	                        $("#readedData").empty();
+							$("#readedData").append(JSON.stringify(data));
+	                    },
+	                    error: function(XmlHttpRequest, textStatus, errorThrown){
+	                        $("#readedData").attr("class","error");
+	                        $("#readedData").empty();
+							$("#readedData").append("获取数据失败");
+	                    }
+	                    }
+	                   );
+	}
+	// 生成Excel文件
+	function writeJSONData(){
+		$('#writeJSONData').ajaxSubmit(
+					{success: function(data){
+						var url = 'Excel文件生成成功，下载地址:<a href="'+rootPath+'/xls/download?fileName='+data+'">'+data+' </a>';
+                        
+                        $("#downloadUrl").attr("class","success");
+                        $("#downloadUrl").empty();
+						$("#downloadUrl").append(url);
+                    },
+                    error: function(XmlHttpRequest, textStatus, errorThrown){
+                        $("#downloadUrl").attr("class","error");
+                        $("#downloadUrl").empty();
+						$("#downloadUrl").append("Excel生成失败");
+                    }
+                    }
+                   );
+	}
+</script>
+<body>
+	<h2>Excel与JSON转换服务使用举例</h2>
+	<div style="width:100%">
+	<table>
+	<tr>
+	<td width="40%">
+	样例文件:<a th:href="@{/xls/download?fileName=模板文件.xlsx}">模板文件.xlsx</a>
+	&nbsp;&nbsp;<a th:href="@{/xls/download?fileName=数据文件.xlsx}">数据文件.xlsx</a><br/>
+	第一步：上传文件
+		<div class="indent">
+		<form id="uploadTemplate" th:action="@{/xlsConfig/uploadXls}" method="post" enctype="multipart/form-data" >
+			模板文件：<input type="file" name="templateFile" required="required"></input><br/>
+			数据文件：<input type="file" name="dataFile" required="required"></input><br/>
+			标签页名称：<input type="text" name="sheetName" required="required"></input>
+			<input type="button" value="文件上传" onclick="uploadTemplate();"></input>
+			<span id="upTempResult"></span>
+			<!-- <span th:text="${result.msg}"  th:class= "${result.success}?'success':'error'" ></span> -->
+		</form>
+		</div>
+	第二步：根据数据文件读取JSON格式数据
+		<div class="indent">
+		<form id="getJSONData" th:action="@{/xls/read.json}" method="post" >
+			数据文件:	<select name="fileName"></select>
+			<input type="button" value="获取JSON数据" onclick="getJSONData()"></input><br/>
+			JSON数据：<br/>
+			<textarea id="readedData" rows="15" readonly="readonly"></textarea>
+		</form>
+		</div>
+	第三步：上传JSON格式数据，根据模板生成Excel
+		<div class="indent">
+		<form id="writeJSONData" th:action="@{/xls/write}" method="post" >
+			JSON数据:<br/>
+			<textarea name="datas" rows="15"></textarea><br/>
+			模板名称：	<select name="fileTemplateName" ></select><br/>
+			模板标签页名称：<input type="text" name="sheetName" required="required"></input><br/>
+			<input type="button" value="生成Excel" onclick="writeJSONData()"></input>
+			<div id="downloadUrl">
+			</div>
+		</form>
+		</div>
+		</td>
+		<td width="10%" >
+		</td>
+		<td width="40%" valign="top" align="left">
+			<i>说明:<br/>
+				<div class="indent">
+				此服务主要功能为Excel与JSON数据之间转换;<br/>
+				直接面向使用对象为：有对应需求的应用程序;<br/>
+				下图为间接用户制作模板文件说明
+				</div>
+				</i>
+			<img alt="" th:src="@{/img/tips.jpg}"></img>
+		</td>
+		</tr>
+		</table>
+	</div>
+</body>
+</html>

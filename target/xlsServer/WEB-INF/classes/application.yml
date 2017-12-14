@@ -1,0 +1,27 @@
+#
+server:  
+  port: 8090  
+  tomcat.max-threads: 0  
+  tomcat.uri-encoding: UTF-8
+  context-path: /SpringBootTest
+spring: 
+  http.encoding.force: true
+  http.encoding.charset: UTF-8
+  http.encoding.enabled: true
+  ldap:
+    urls:
+      - 10.170.33.101:389
+    base: dc=my-domain,dc=com
+    username: root
+    password: 123
+  jpa:
+    hibernate:
+      naming:
+        # 对象模型显示指定列名
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl 
+  datasource: 
+    url : jdbc:mysql://localhost:3306/xlsserver
+    username : root
+    password : root
+    driverClassName : com.mysql.jdbc.Driver
+    
